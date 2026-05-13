@@ -4454,117 +4454,6 @@ def execute_command(command):
 
 def script_console():
 
-    while True:  # 外部ループ：コンソール継続
-
-        print()
-        print(
-            f"{C.BRIGHT_MAGENTA}"
-            "╔════════════════════════════════════════════════╗"
-        )
-        print(
-            f"{C.BRIGHT_MAGENTA}"
-            "║          NANOACTSCRIPT CONSOLE                ║"
-            f"{C.RESET}"
-        )
-        print(
-            f"{C.BRIGHT_MAGENTA}"
-            "╚════════════════════════════════════════════════╝"
-            f"{C.RESET}"
-        )
-        print(
-            f"{C.BRIGHT_BLACK}"
-            "  Use ';' to separate commands"
-            f"{C.RESET}"
-        )
-        print(
-            f"{C.BRIGHT_BLACK}"
-            "  Ctrl+E: Newline, Ctrl+G: Execute, 'exit': Force quit"
-            f"{C.RESET}"
-        )
-
-        print()
-
-        lines = []
-
-        try:
-            while True:
-                try:
-                    raw_line = input(f"{C.BRIGHT_YELLOW}>>> {C.RESET}")
-                    line_clean = raw_line.strip()
-
-                    # EXIT = 強制終了（即コンソール全体終了）
-                    if line_clean.lower() == "exit":
-                        print()
-                        slow_print(
-                            "[ CONSOLE FORCE EXIT ]",
-                            0.005,
-                            C.BRIGHT_RED
-                        )
-                        return  # 即終了（メニューにも戻らない）
-
-                    if not line_clean:
-                        continue
-
-                    lines.append(raw_line)
-
-                    print(
-                        f"{C.BRIGHT_BLACK}"
-                        f"[{len(lines)}] Added"
-                        f"{C.RESET}"
-                    )
-
-                except EOFError:
-                    # Ctrl+G (execute)
-                    script = "\n".join(lines).strip()
-
-                    if script:
-                        print()
-                        slow_print(
-                            "[ EXECUTING SCRIPT ]",
-                            0.003,
-                            C.BRIGHT_MAGENTA
-                        )
-
-                        try:
-                            execute_script(script)
-                        except KeyboardInterrupt:
-                            print(f"{C.RESET}")
-                            slow_print(
-                                "[ SCRIPT INTERRUPTED ]",
-                                0.005,
-                                C.BRIGHT_RED
-                            )
-                        except Exception as e:
-                            print(
-                                script_error(
-                                    "SCRIPT_RUNTIME_FAILURE",
-                                    str(e),
-                                    "P13"
-                                )
-                            )
-
-                        lines = []
-                        print(f"\n{C.BRIGHT_BLACK}  Ready for next input{C.RESET}\n")
-
-                    else:
-                        # 空実行＝即終了（homeへ戻らない）
-                        return
-
-        except KeyboardInterrupt:
-            if lines:
-                print(f"\n{C.BRIGHT_YELLOW}[ INPUT CLEARED ]{C.RESET}")
-                lines = []
-            else:
-                print()
-                slow_print(
-                    "[ CONSOLE CLOSED ]",
-                    0.005,
-                    C.BRIGHT_RED
-                )
-                break
-
-def script_console():
-
     # Windows / CMD 安定版コンソール（EOF非依存・シンプル操作版）
 
     while True:
@@ -4696,6 +4585,216 @@ def script_console():
                     print()
                     slow_print("[ RETURNING TO HOME ]", 0.005, C.BRIGHT_RED)
                     return
+
+def script_menu():
+
+    while True:
+
+        print()
+
+        print(
+            f"{C.BRIGHT_MAGENTA}"
+            "╔════════════════════════════════════════════════╗"
+        )
+
+        print(
+            f"{C.BRIGHT_MAGENTA}"
+            "║          NANOACTSCRIPT MENU                  ║"
+            f"{C.RESET}"
+        )
+
+        print(
+            f"{C.BRIGHT_MAGENTA}"
+            "╚════════════════════════════════════════════════╝"
+            f"{C.RESET}"
+        )
+
+        print()
+
+        print(
+            f"{C.BRIGHT_GREEN}  [1]{C.WHITE} Run Script"
+        )
+
+        print(
+            f"{C.BRIGHT_CYAN}  [2]{C.WHITE} Help"
+        )
+
+        print(
+            f"{C.BRIGHT_YELLOW}  [3]{C.WHITE} Clear Memory"
+        )
+
+        print(
+            f"{C.BRIGHT_BLUE}  [4]{C.WHITE} Debug Memory"
+        )
+
+        print(
+            f"{C.BRIGHT_RED}  [5]{C.WHITE} Exit NANOACTSCRIPT"
+        )
+
+        print()
+
+        try:
+
+            choice = input(
+                f"{C.BRIGHT_MAGENTA}MENU >> {C.RESET}"
+            )
+
+        except KeyboardInterrupt:
+
+            print()
+
+            slow_print(
+                "[ MENU INTERRUPTED ]",
+                0.005,
+                C.BRIGHT_RED
+            )
+
+            break
+
+        except EOFError:
+
+            print(
+                script_error(
+                    "MENU_INPUT_ERROR",
+                    "Input stream closed.",
+                    "P14"
+                )
+            )
+
+            break
+
+        choice = choice.strip()
+
+        if choice == "1":
+
+            clear_screen()
+            script_console()
+
+        elif choice == "2":
+
+            clear_screen()
+            script_help()
+
+        elif choice == "3":
+
+            SCRIPT_VARIABLES.clear()
+            SCRIPT_DISPLAYS.clear()
+            SCRIPT_FUNCTIONS.clear()
+            SCRIPT_GAGES.clear()
+            ACTIVE_INTERVALS.clear()
+
+            print()
+
+            slow_print(
+                "[ MEMORY CLEARED ]",
+                0.005,
+                C.BRIGHT_YELLOW
+            )
+
+        elif choice == "4":
+
+            clear_screen()
+
+            print()
+
+            print(
+                f"{C.BRIGHT_MAGENTA}"
+                "╔════════════════════════════════════════════════╗"
+            )
+
+            print(
+                f"{C.BRIGHT_MAGENTA}"
+                "║           MEMORY STATE                       ║"
+                f"{C.RESET}"
+            )
+
+            print(
+                f"{C.BRIGHT_MAGENTA}"
+                "╚════════════════════════════════════════════════╝"
+                f"{C.RESET}"
+            )
+
+            print()
+
+            print(
+                f"{C.BRIGHT_GREEN}[ VARIABLES ]{C.RESET}"
+            )
+
+            if SCRIPT_VARIABLES:
+
+                for key, value in SCRIPT_VARIABLES.items():
+
+                    print(
+                        f"{C.BRIGHT_CYAN}"
+                        f"  {key}"
+                        f"{C.BRIGHT_BLACK} = "
+                        f"{C.BRIGHT_YELLOW}{repr(value)}"
+                        f"{C.RESET}"
+                    )
+
+            else:
+
+                print(
+                    f"{C.BRIGHT_BLACK}  [ EMPTY ]{C.RESET}"
+                )
+
+            print()
+
+            print(
+                f"{C.BRIGHT_CYAN}[ FUNCTIONS ]{C.RESET}"
+            )
+
+            if SCRIPT_FUNCTIONS:
+
+                for key in SCRIPT_FUNCTIONS.keys():
+
+                    print(
+                        f"{C.BRIGHT_WHITE}"
+                        f"  {key}()"
+                        f"{C.RESET}"
+                    )
+
+            else:
+
+                print(
+                    f"{C.BRIGHT_BLACK}  [ EMPTY ]{C.RESET}"
+                )
+
+            print()
+
+            input(
+                f"{C.BRIGHT_BLACK}"
+                "Press Enter to continue..."
+                f"{C.RESET}"
+            )
+
+            clear_screen()
+
+        elif choice == "5":
+
+            print()
+
+            slow_print(
+                "[ NANOACTSCRIPT SHUTDOWN ]",
+                0.005,
+                C.BRIGHT_RED
+            )
+
+            break
+
+        elif choice == "":
+
+            continue
+
+        else:
+
+            print(
+                script_error(
+                    "INVALID_MENU",
+                    "Unknown menu index.",
+                    "P15"
+                )
+            )
 
 def clear_screen():
 
