@@ -4452,47 +4452,9 @@ def execute_command(command):
         )
     )
 
-def execute_script(script):
-
-    script = str(script).strip()
-
-    if script == "":
-        return
-
-    commands = split_cipher_commands(script)
-
-    for command in commands:
-
-        command = str(command).strip()
-
-        if command == "":
-            continue
-
-        try:
-
-            execute_command(command)
-
-        except FunctionReturn as e:
-
-            global FUNC_RETURN_VALUE
-            FUNC_RETURN_VALUE = e.value
-            raise
-
-ENGINE_STATE = {
-
-    "boot_time": time.time(),
-
-    "executed_commands": 0,
-    "scripts_executed": 0,
-
-    "runtime_errors": 0,
-
-    "last_error": None,
-}
-
 def script_console():
 
-    while True: # 外部ループ：実行後にコンソールを継続するため
+    while True:  # 外部ループ：コンソール継続
 
         print()
         print(
@@ -4514,11 +4476,9 @@ def script_console():
             "  Use ';' to separate commands"
             f"{C.RESET}"
         )
-        
-        # 表示を要望通りに変更
         print(
             f"{C.BRIGHT_BLACK}"
-            "  Ctrl+E: Newline, Ctrl+G: Execute, 'exit': Home"
+            "  Ctrl+E: Newline, Ctrl+G: Execute, 'exit': Force quit"
             f"{C.RESET}"
         )
 
@@ -4529,24 +4489,23 @@ def script_console():
         try:
             while True:
                 try:
-                    line = input(
-                        f"{C.BRIGHT_YELLOW}>>> {C.RESET}"
-                    )
+                    raw_line = input(f"{C.BRIGHT_YELLOW}>>> {C.RESET}")
+                    line_clean = raw_line.strip()
 
-                    # 'exit' 入力時は即座にメインメニューへ戻る
-                    if line.lower() == "exit":
+                    # EXIT = 強制終了（即コンソール全体終了）
+                    if line_clean.lower() == "exit":
                         print()
                         slow_print(
-                            "[ RETURNING TO HOME ]",
+                            "[ CONSOLE FORCE EXIT ]",
                             0.005,
                             C.BRIGHT_RED
                         )
-                        return # 関数を終了してメニューに戻る
+                        return  # 即終了（メニューにも戻らない）
 
-                    if line == "":
+                    if not line_clean:
                         continue
 
-                    lines.append(line)
+                    lines.append(raw_line)
 
                     print(
                         f"{C.BRIGHT_BLACK}"
@@ -4555,9 +4514,10 @@ def script_console():
                     )
 
                 except EOFError:
-                    # ここが実行（Ctrl+G相当）の処理
-                    if lines:
-                        script = "\n".join(lines)
+                    # Ctrl+G (execute)
+                    script = "\n".join(lines).strip()
+
+                    if script:
                         print()
                         slow_print(
                             "[ EXECUTING SCRIPT ]",
@@ -4568,7 +4528,7 @@ def script_console():
                         try:
                             execute_script(script)
                         except KeyboardInterrupt:
-                            print()
+                            print(f"{C.RESET}")
                             slow_print(
                                 "[ SCRIPT INTERRUPTED ]",
                                 0.005,
@@ -4584,25 +4544,15 @@ def script_console():
                             )
 
                         lines = []
-                        print()
-                        print(
-                            f"{C.BRIGHT_BLACK}"
-                            "  Ready for next input"
-                            f"{C.RESET}"
-                        )
-                        print()
+                        print(f"\n{C.BRIGHT_BLACK}  Ready for next input{C.RESET}\n")
+
                     else:
-                        # 何も入力せずに実行（EOF）した場合は終了
+                        # 空実行＝即終了（homeへ戻らない）
                         return
 
         except KeyboardInterrupt:
             if lines:
-                print()
-                print(
-                    f"{C.BRIGHT_YELLOW}"
-                    "[ INPUT CLEARED ]"
-                    f"{C.RESET}"
-                )
+                print(f"\n{C.BRIGHT_YELLOW}[ INPUT CLEARED ]{C.RESET}")
                 lines = []
             else:
                 print()
@@ -4613,47 +4563,81 @@ def script_console():
                 )
                 break
 
-                    if line == "":
-                        continue
+def script_console():
 
-                    lines.append(line)
+    # Windows / CMD 安定版コンソール（EOF非依存・シンプル操作版）
 
-                    print(
-                        f"{C.BRIGHT_BLACK}"
-                        f"[{len(lines)}] Added"
-                        f"{C.RESET}"
-                    )
+    while True:
 
-                except EOFError:
+        print()
+        print(
+            f"{C.BRIGHT_MAGENTA}"
+            "╔════════════════════════════════════════════════╗"
+        )
+        print(
+            f"{C.BRIGHT_MAGENTA}"
+            "║          NANOACTSCRIPT CONSOLE                ║"
+            f"{C.RESET}"
+        )
+        print(
+            f"{C.BRIGHT_MAGENTA}"
+            "╚════════════════════════════════════════════════╝"
+            f"{C.RESET}"
+        )
 
-                    if lines:
+        print(
+            f"{C.BRIGHT_BLACK}"
+            "  Type script lines below (press ENTER after each line)"
+            f"{C.RESET}"
+        )
+        print(
+            f"{C.BRIGHT_BLACK}"
+            "  END   = execute script"
+            f"{C.RESET}"
+        )
+        print(
+            f"{C.BRIGHT_BLACK}"
+            "  EXIT  = return to home menu"
+            f"{C.RESET}"
+        )
+        print(
+            f"{C.BRIGHT_BLACK}"
+            "  BACK  = remove last line"
+            f"{C.RESET}"
+        )
+        print(
+            f"{C.BRIGHT_BLACK}"
+            "  HIST  = show current input history"
+            f"{C.RESET}"
+        )
+        print()
 
-                        script = "\n".join(lines)
+        lines = []
 
+        while True:
+            try:
+                raw_line = input(f"{C.BRIGHT_YELLOW}>>> {C.RESET}")
+                line = raw_line.strip()
+
+                # EXIT → ホームへ戻る
+                if line.lower() == "exit":
+                    print()
+                    slow_print("[ RETURNING TO HOME ]", 0.005, C.BRIGHT_RED)
+                    return
+                # END → スクリプト実行（Enterは不要、ENDと入力するだけ）
+                if line.lower() == "end":
+                    script = "\n".join(lines).strip()
+                    
+                    if script:
                         print()
-
-                        slow_print(
-                            "[ EXECUTING SCRIPT ]",
-                            0.003,
-                            C.BRIGHT_MAGENTA
-                        )
+                        slow_print("[ EXECUTING SCRIPT ]", 0.003, C.BRIGHT_MAGENTA)
 
                         try:
-
                             execute_script(script)
-
                         except KeyboardInterrupt:
-
                             print()
-
-                            slow_print(
-                                "[ SCRIPT INTERRUPTED ]",
-                                0.005,
-                                C.BRIGHT_RED
-                            )
-
+                            slow_print("[ SCRIPT INTERRUPTED ]", 0.005, C.BRIGHT_RED)
                         except Exception as e:
-
                             print(
                                 script_error(
                                     "SCRIPT_RUNTIME_FAILURE",
@@ -4661,237 +4645,57 @@ def script_console():
                                     "P13"
                                 )
                             )
+                    else:
+                        slow_print("[ EMPTY SCRIPT ]", 0.005, C.BRIGHT_BLACK)
+                        
+                    lines = []
+                    print(f"\n{C.BRIGHT_BLACK}  Ready for next script{C.RESET}\n")
+                    continue
 
-                        lines = []
+                # BACK → 最後の1行削除
+                if line.lower() == "back":
+                    if lines:
+                        removed = lines.pop()
+                        print(f"{C.BRIGHT_BLACK}[ REMOVED ] {removed}{C.RESET}")
+                    continue
 
-                        print()
+                # HIST → 現在入力中の内容表示
+                if line.lower() == "hist":
+                    print()
+                    print(f"{C.BRIGHT_CYAN}[ CURRENT BUFFER ]{C.RESET}")
+                    if lines:
+                        for i, l in enumerate(lines, 1):
+                            print(f"  {i}: {l}")
+                    else:
+                        print("  [ EMPTY ]")
+                    print()
+                    continue
 
-                        print(
-                            f"{C.BRIGHT_BLACK}"
-                            "  Ready for next input"
-                            f"{C.RESET}"
-                        )
+                # 空行無視
+                if not line:
+                    continue
 
-                        print()
-
-def script_menu():
-
-    while True:
-
-        print()
-
-        print(
-            f"{C.BRIGHT_MAGENTA}"
-            "╔════════════════════════════════════════════════╗"
-        )
-
-        print(
-            f"{C.BRIGHT_MAGENTA}"
-            "║          NANOACTSCRIPT MENU                  ║"
-            f"{C.RESET}"
-        )
-
-        print(
-            f"{C.BRIGHT_MAGENTA}"
-            "╚════════════════════════════════════════════════╝"
-            f"{C.RESET}"
-        )
-
-        print()
-
-        print(
-            f"{C.BRIGHT_GREEN}  [1]{C.WHITE} Run Script (Console)"
-        )
-
-        print(
-            f"{C.BRIGHT_GREEN}  [2]{C.WHITE} Script Editor"
-        )
-
-        print(
-            f"{C.BRIGHT_CYAN}  [3]{C.WHITE} Help"
-        )
-
-        print(
-            f"{C.BRIGHT_YELLOW}  [4]{C.WHITE} Clear Memory"
-        )
-
-        print(
-            f"{C.BRIGHT_BLUE}  [5]{C.WHITE} Debug Memory"
-        )
-
-        print(
-            f"{C.BRIGHT_RED}  [6]{C.WHITE} Exit NANOACTSCRIPT"
-        )
-
-        print()
-
-        try:
-
-            choice = input(
-                f"{C.BRIGHT_MAGENTA}MENU >> {C.RESET}"
-            )
-
-        except KeyboardInterrupt:
-
-            print()
-
-            slow_print(
-                "[ MENU INTERRUPTED ]",
-                0.005,
-                C.BRIGHT_RED
-            )
-
-            break
-
-        except EOFError:
-
-            print(
-                script_error(
-                    "MENU_INPUT_ERROR",
-                    "Input stream closed.",
-                    "P14"
-                )
-            )
-
-            break
-
-        choice = choice.strip()
-
-        if choice == "1":
-
-            clear_screen()
-            script_console()
-
-        elif choice == "2":
-
-            clear_screen()
-            script_editor()
-
-        elif choice == "3":
-
-            clear_screen()
-            script_help()
-
-        elif choice == "4":
-
-            SCRIPT_VARIABLES.clear()
-            SCRIPT_DISPLAYS.clear()
-            SCRIPT_FUNCTIONS.clear()
-            SCRIPT_GAGES.clear()
-            ACTIVE_INTERVALS.clear()
-
-            print()
-
-            slow_print(
-                "[ MEMORY CLEARED ]",
-                0.005,
-                C.BRIGHT_YELLOW
-            )
-
-        elif choice == "5":
-
-            clear_screen()
-
-            print()
-
-            print(
-                f"{C.BRIGHT_MAGENTA}"
-                "╔════════════════════════════════════════════════╗"
-            )
-
-            print(
-                f"{C.BRIGHT_MAGENTA}"
-                "║           MEMORY STATE                       ║"
-                f"{C.RESET}"
-            )
-
-            print(
-                f"{C.BRIGHT_MAGENTA}"
-                "╚════════════════════════════════════════════════╝"
-                f"{C.RESET}"
-            )
-
-            print()
-
-            print(
-                f"{C.BRIGHT_GREEN}[ VARIABLES ]{C.RESET}"
-            )
-
-            if SCRIPT_VARIABLES:
-
-                for key, value in SCRIPT_VARIABLES.items():
-
-                    print(
-                        f"{C.BRIGHT_CYAN}"
-                        f"  {key}"
-                        f"{C.BRIGHT_BLACK} = "
-                        f"{C.BRIGHT_YELLOW}{repr(value)}"
-                        f"{C.RESET}"
-                    )
-
-            else:
+                lines.append(raw_line)
 
                 print(
-                    f"{C.BRIGHT_BLACK}  [ EMPTY ]{C.RESET}"
+                    f"{C.BRIGHT_BLACK}[{len(lines)}] Added{C.RESET}"
                 )
 
-            print()
+            except EOFError:
+                # Windows: Ctrl+Z + Enter
+                print()
+                slow_print("[ EOF RECEIVED -> RETURNING TO HOME ]", 0.005, C.BRIGHT_RED)
+                return
 
-            print(
-                f"{C.BRIGHT_CYAN}[ FUNCTIONS ]{C.RESET}"
-            )
-
-            if SCRIPT_FUNCTIONS:
-
-                for key in SCRIPT_FUNCTIONS.keys():
-
-                    print(
-                        f"{C.BRIGHT_WHITE}"
-                        f"  {key}()"
-                        f"{C.RESET}"
-                    )
-
-            else:
-
-                print(
-                    f"{C.BRIGHT_BLACK}  [ EMPTY ]{C.RESET}"
-                )
-
-            print()
-
-            input(
-                f"{C.BRIGHT_BLACK}"
-                "Press Enter to continue..."
-                f"{C.RESET}"
-            )
-
-            clear_screen()
-
-        elif choice == "6":
-
-            print()
-
-            slow_print(
-                "[ NANOACTSCRIPT SHUTDOWN ]",
-                0.005,
-                C.BRIGHT_RED
-            )
-
-            break
-
-        elif choice == "":
-
-            continue
-
-        else:
-
-            print(
-                script_error(
-                    "INVALID_MENU",
-                    "Unknown menu index.",
-                    "P15"
-                )
-            )
+            except KeyboardInterrupt:
+                if lines:
+                    print(f"\n{C.BRIGHT_YELLOW}[ INPUT CLEARED ]{C.RESET}")
+                    lines = []
+                    continue
+                else:
+                    print()
+                    slow_print("[ RETURNING TO HOME ]", 0.005, C.BRIGHT_RED)
+                    return
 
 def clear_screen():
 
