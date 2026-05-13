@@ -12,8 +12,6 @@ import math
 import random
 import os
 import json
-import sys
-
 
 # =========================================================
 # SCRIPT ENGINE MEMORY
@@ -160,31 +158,31 @@ def ui_input(label="INPUT"):
 
 def splash_screen():
 
-    print()
+    print();
 
     print(
         f"{C.BRIGHT_MAGENTA}"
-        "██████╗ ██╗   ██╗ █████╗ ███╗   ██╗ ██████╗ "
+        "██████╗  █████╗ ███████╗"
     )
 
     print(
-        "██╔__ ██╗██║   ██║██╔══██╗████╗  ██║██╔═══██╗"
+        "██╔══██╗██╔══██╗██╔════╝"
     )
 
     print(
-        "██║  ██║██║   ██║███████║██╔██╗ ██║██║   ██║"
+        "██████╔╝███████║███████╗"
     )
 
     print(
-        "██║  ██║██║   ██║██╔══██║██║╚██╗██║██║   ██║"
+        "██╔══██╗██╔══██║╚════██║"
     )
 
     print(
-        "██████╔╝╚██████╔╝██║  ██║██║ ╚████║╚██████╔╝"
+        "██████╔╝██║  ██║███████║"
     )
 
     print(
-        "╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ "
+        "╚═════╝ ╚═╝  ╚═╝╚══════╝"
         f"{C.RESET}"
     )
 
@@ -196,7 +194,12 @@ def splash_screen():
     )
 
     ui_message(
-        "LIGHTWEIGHT SCRIPT SYSTEM",
+        "Simple small-scale programming language",
+        C.BRIGHT_YELLOW
+    )
+    
+    ui_message(
+        "Simple sandbox environment engine",
         C.BRIGHT_YELLOW
     )
 
@@ -361,6 +364,62 @@ def parse_value(value):
         except:
 
             return 0
+
+    randint_match = re.fullmatch(
+        r'M\.randint\((.+),(.+)\)',
+        value
+    )
+
+    if randint_match:
+
+        try:
+
+            min_val = int(parse_value(randint_match.group(1).strip()))
+            max_val = int(parse_value(randint_match.group(2).strip()))
+
+            return random.randint(min_val, max_val)
+
+        except:
+
+            return 0
+
+    choice_match = re.fullmatch(
+        r'M\.choice\((.+)\)',
+        value
+    )
+
+    if choice_match:
+
+        raw = choice_match.group(1).strip()
+
+        if raw in SCRIPT_VARIABLES and isinstance(SCRIPT_VARIABLES[raw], list):
+
+            arr = SCRIPT_VARIABLES[raw]
+
+            if arr:
+
+                return random.choice(arr)
+
+        return None
+
+    len_match = re.fullmatch(
+        r'(.+?)\.len',
+        value
+    )
+
+    if len_match:
+
+        var_name = len_match.group(1).strip()
+
+        if var_name in SCRIPT_VARIABLES:
+
+            var = SCRIPT_VARIABLES[var_name]
+
+            if isinstance(var, (list, str)):
+
+                return len(var)
+
+        return 0
 
     if value in SCRIPT_VARIABLES:
 
@@ -715,6 +774,119 @@ def cmd_in_dis(command):
 
     render_display(name)
 
+def cmd_multidis(command):
+
+    match = re.fullmatch(
+        r'multidis\((.+?),(.+?)\)',
+        command
+    )
+
+    if not match:
+
+        print(
+            script_error(
+                "INVALID_MULTIDIS_DECLARATION",
+                "Invalid multidis() syntax.",
+                "MD01"
+            )
+        )
+        return
+
+    name = match.group(1).strip()
+    value = match.group(2).strip()
+
+    if not SAFE_VAR_PATTERN.fullmatch(name):
+
+        print(
+            script_error(
+                "INVALID_MULTIDIS_NAME",
+                f"'{name}' is not a valid display name.",
+                "MD02"
+            )
+        )
+        return
+
+    if (
+        value.startswith('"') and
+        value.endswith('"')
+    ):
+
+        value = value[1:-1]
+
+    else:
+
+        value = parse_value(value)
+        value = str(value)
+
+    SCRIPT_DISPLAYS[name] = value
+
+    print_multidis(name)
+
+def print_multidis(name):
+
+    if name not in SCRIPT_DISPLAYS:
+
+        print(
+            script_error(
+                "UNKNOWN_MULTIDIS",
+                f"MultiDis '{name}' does not exist.",
+                "MD03"
+            )
+        )
+        return
+
+    data = SCRIPT_DISPLAYS[name]
+
+    print(f"[{data}]")
+
+def cmd_in_multidis(command):
+
+    match = re.fullmatch(
+        r'in multidis\s*\((.+?)\)\s*=\s*(.+)',
+        command
+    )
+
+    if not match:
+
+        print(
+            script_error(
+                "INVALID_MULTIDIS_INPUT",
+                "Invalid in multidis() syntax.",
+                "MD04"
+            )
+        )
+        return
+
+    name = match.group(1).strip()
+    value = match.group(2).strip()
+
+    if name not in SCRIPT_DISPLAYS:
+
+        print(
+            script_error(
+                "UNKNOWN_MULTIDIS",
+                f"MultiDis '{name}' does not exist.",
+                "MD05"
+            )
+        )
+        return
+
+    if (
+        value.startswith('"') and
+        value.endswith('"')
+    ):
+
+        value = value[1:-1]
+
+    else:
+
+        value = parse_value(value)
+        value = str(value)
+
+    SCRIPT_DISPLAYS[name] = value
+
+    print_multidis(name)
+
 def cmd_func(command):
 
     match = re.fullmatch(
@@ -1067,6 +1239,12 @@ def cmd_array_pointer(command):
 
     return True
 
+class LoopBreak(Exception):
+    pass
+
+class LoopContinue(Exception):
+    pass
+
 LAST_IF_RESULT = False
 
 def cmd_if(command):
@@ -1390,6 +1568,14 @@ def cmd_while(command):
 
             execute_script(body)
 
+        except LoopBreak:
+
+            break
+
+        except LoopContinue:
+
+            continue
+
         except Exception as e:
 
             print(
@@ -1401,6 +1587,401 @@ def cmd_while(command):
             )
 
             return
+
+def cmd_for(command):
+
+    match = re.fullmatch(
+        r'for\s*\(\s*(.+?)\s*,\s*(.+?)\s*,\s*(.+?)\s*\)\s*\{(.*)\}',
+        command,
+        re.DOTALL
+    )
+
+    if not match:
+
+        print(
+            script_error(
+                "INVALID_FOR_SYNTAX",
+                "Invalid for() syntax.",
+                "F01"
+            )
+        )
+        return
+
+    var_name = match.group(1).strip()
+    start_val = parse_value(match.group(2).strip())
+    end_val = parse_value(match.group(3).strip())
+    body = match.group(4).strip()
+
+    if not SAFE_VAR_PATTERN.fullmatch(var_name):
+
+        print(
+            script_error(
+                "INVALID_FOR_VARIABLE",
+                f"'{var_name}' is not a valid variable name.",
+                "F02"
+            )
+        )
+        return
+
+    if body == "":
+
+        print(
+            script_error(
+                "EMPTY_FOR_BODY",
+                "for() body cannot be empty.",
+                "F03"
+            )
+        )
+        return
+
+    try:
+
+        start_val = int(start_val)
+        end_val = int(end_val)
+
+    except:
+
+        print(
+            script_error(
+                "FOR_VALUE_ERROR",
+                "for() values must be numeric.",
+                "F04"
+            )
+        )
+        return
+
+    loop_count = 0
+    max_loops = 10000
+
+    if start_val <= end_val:
+
+        current = start_val
+
+        while current < end_val:
+
+            loop_count += 1
+
+            if loop_count > max_loops:
+
+                print(
+                    script_error(
+                        "FOR_LIMIT_EXCEEDED",
+                        "Loop exceeded safety limit.",
+                        "F05"
+                    )
+                )
+
+                return
+
+            SCRIPT_VARIABLES[var_name] = current
+
+            try:
+
+                execute_script(body)
+
+            except LoopBreak:
+
+                break
+
+            except LoopContinue:
+
+                current += 1
+                continue
+
+            except Exception as e:
+
+                print(
+                    script_error(
+                        "FOR_RUNTIME_ERROR",
+                        str(e),
+                        "F06"
+                    )
+                )
+
+                return
+
+            current += 1
+
+    else:
+
+        current = start_val
+
+        while current > end_val:
+
+            loop_count += 1
+
+            if loop_count > max_loops:
+
+                print(
+                    script_error(
+                        "FOR_LIMIT_EXCEEDED",
+                        "Loop exceeded safety limit.",
+                        "F05"
+                    )
+                )
+
+                return
+
+            SCRIPT_VARIABLES[var_name] = current
+
+            try:
+
+                execute_script(body)
+
+            except LoopBreak:
+
+                break
+
+            except LoopContinue:
+
+                current -= 1
+                continue
+
+            except Exception as e:
+
+                print(
+                    script_error(
+                        "FOR_RUNTIME_ERROR",
+                        str(e),
+                        "F06"
+                    )
+                )
+
+                return
+
+            current -= 1
+
+def cmd_for_of(command):
+
+    match = re.fullmatch(
+        r'for\s*of\s*\(\s*(.+?)\s*,\s*(.+?)\s*\)\s*\{(.*)\}',
+        command,
+        re.DOTALL
+    )
+
+    if not match:
+
+        print(
+            script_error(
+                "INVALID_FOR_OF_SYNTAX",
+                "Invalid for of() syntax.",
+                "FO01"
+            )
+        )
+        return
+
+    var_name = match.group(1).strip()
+    array_name = match.group(2).strip()
+    body = match.group(3).strip()
+
+    if not SAFE_VAR_PATTERN.fullmatch(var_name):
+
+        print(
+            script_error(
+                "INVALID_FOR_OF_VARIABLE",
+                f"'{var_name}' is not a valid variable name.",
+                "FO02"
+            )
+        )
+        return
+
+    if array_name not in SCRIPT_VARIABLES:
+
+        print(
+            script_error(
+                "ARRAY_NOT_FOUND",
+                f"Array '{array_name}' does not exist.",
+                "FO03"
+            )
+        )
+        return
+
+    if not isinstance(SCRIPT_VARIABLES[array_name], list):
+
+        print(
+            script_error(
+                "NOT_ARRAY",
+                f"'{array_name}' is not an array.",
+                "FO04"
+            )
+        )
+        return
+
+    if body == "":
+
+        print(
+            script_error(
+                "EMPTY_FOR_OF_BODY",
+                "for of() body cannot be empty.",
+                "FO05"
+            )
+        )
+        return
+
+    array = SCRIPT_VARIABLES[array_name]
+
+    loop_count = 0
+    max_loops = 10000
+
+    for element in array:
+
+        loop_count += 1
+
+        if loop_count > max_loops:
+
+            print(
+                script_error(
+                    "FOR_OF_LIMIT_EXCEEDED",
+                    "Loop exceeded safety limit.",
+                    "FO06"
+                )
+            )
+
+            return
+
+        SCRIPT_VARIABLES[var_name] = element
+
+        try:
+
+            execute_script(body)
+
+        except LoopBreak:
+
+            break
+
+        except LoopContinue:
+
+            continue
+
+        except Exception as e:
+
+            print(
+                script_error(
+                    "FOR_OF_RUNTIME_ERROR",
+                    str(e),
+                    "FO07"
+                )
+            )
+
+            return
+
+def cmd_swi(command):
+
+    match = re.fullmatch(
+        r'swi\((.+?)\)\{(.*)\}',
+        command,
+        re.DOTALL
+    )
+
+    if not match:
+
+        print(
+            script_error(
+                "INVALID_SWITCH_SYNTAX",
+                "Invalid swi() syntax.",
+                "SW01"
+            )
+        )
+        return
+
+    switch_value = parse_value(match.group(1).strip())
+    body = match.group(2).strip()
+
+    if body == "":
+
+        print(
+            script_error(
+                "EMPTY_SWITCH_BODY",
+                "swi() body cannot be empty.",
+                "SW02"
+            )
+        )
+        return
+
+    case_pattern = re.findall(
+        r'case\((.+?)\)\{(.+?)\}(?=case|default|\Z)',
+        body,
+        re.DOTALL
+    )
+
+    default_pattern = re.search(
+        r'default\{(.+?)\}',
+        body,
+        re.DOTALL
+    )
+
+    matched = False
+
+    for case_val, case_body in case_pattern:
+
+        case_val = parse_value(case_val.strip())
+
+        if switch_value == case_val:
+
+            try:
+
+                execute_script(case_body.strip())
+
+            except Exception as e:
+
+                print(
+                    script_error(
+                        "SWITCH_RUNTIME_ERROR",
+                        str(e),
+                        "SW03"
+                    )
+                )
+
+            matched = True
+            break
+
+    if not matched and default_pattern:
+
+        default_body = default_pattern.group(1).strip()
+
+        try:
+
+            execute_script(default_body)
+
+        except Exception as e:
+
+            print(
+                script_error(
+                    "SWITCH_DEFAULT_ERROR",
+                    str(e),
+                    "SW04"
+                )
+            )
+
+def cmd_break(command):
+
+    if command != "break":
+
+        print(
+            script_error(
+                "INVALID_BREAK_SYNTAX",
+                "Invalid break syntax.",
+                "LB01"
+            )
+        )
+        return
+
+    raise LoopBreak()
+
+def cmd_continue(command):
+
+    if command != "continue":
+
+        print(
+            script_error(
+                "INVALID_CONTINUE_SYNTAX",
+                "Invalid continue syntax.",
+                "LB02"
+            )
+        )
+        return
+
+    raise LoopContinue()
 
 def split_cipher_commands(script):
 
@@ -1500,7 +2081,14 @@ def split_cipher_commands(script):
         commands.append(final_command)
 
     return commands
-  
+
+FUNC_RETURN_VALUE = None
+
+class FunctionReturn(Exception):
+    def __init__(self, value):
+        self.value = value
+        super().__init__()
+
 def cmd_func_run(command):
 
     global FUNC_RETURN_VALUE
@@ -1562,6 +2150,30 @@ def cmd_func_run(command):
                 "S12B"
             )
         )
+
+def cmd_func_return(command):
+
+    match = re.fullmatch(
+        r'>>\s*(.+)',
+        command
+    )
+
+    if not match:
+
+        print(
+            script_error(
+                "INVALID_RETURN_SYNTAX",
+                "Invalid >> syntax.",
+                "S12C"
+            )
+        )
+        return
+
+    raw = match.group(1).strip()
+
+    value = parse_value(raw)
+
+    raise FunctionReturn(value)
 
 TOUCH_BINDINGS = {
     "w": None,
@@ -2583,7 +3195,7 @@ def cmd_memory(command):
                 f"{C.RESET}"
                 f" = "
                 f"{C.BRIGHT_WHITE}"
-                f"{value}"
+                f"[{value}]"
                 f"{C.RESET}"
             )
 
@@ -2695,7 +3307,7 @@ DISPLAY SYSTEM
 
 display(name)
 ------------------------------------------------------------
-Create a display object.
+Create a display object (0 or 1).
 
 Example:
 display(power)
@@ -2711,6 +3323,26 @@ Change display visibility.
 
 Example:
 in dis (power)=1
+
+------------------------------------------------------------
+
+multidis(name,value)
+------------------------------------------------------------
+Create a multi-display (any text/value).
+
+Example:
+multidis(message,"Hello")
+multidis(counter,0)
+
+------------------------------------------------------------
+
+in multidis(name)=value
+------------------------------------------------------------
+Change multi-display content.
+
+Example:
+in multidis(message)="World"
+in multidis(counter,10)
 
 ============================================================
 """
@@ -2812,6 +3444,80 @@ while(x>0){
     int(x,x-1)
 }
 
+------------------------------------------------------------
+
+for(var,start,end){...}
+------------------------------------------------------------
+Loop from start to end.
+
+Increments if start < end.
+Decrements if start > end.
+
+Example:
+for(i,0,5){
+    on(i)
+}
+
+Result: 0 1 2 3 4
+
+------------------------------------------------------------
+
+for of(var,array){...}
+------------------------------------------------------------
+Loop through array elements.
+
+Example:
+inli(colors,["red","blue","green"])
+for of(color,colors){
+    on(color)
+}
+
+------------------------------------------------------------
+
+swi(value){
+    case(1){on("ONE")}
+    case(2){on("TWO")}
+    default{on("OTHER")}
+}
+------------------------------------------------------------
+Switch statement for multiple conditions.
+
+Example:
+int(status,2)
+swi(status){
+    case(1){on("Active")}
+    case(2){on("Inactive")}
+    default{on("Unknown")}
+}
+
+------------------------------------------------------------
+
+break
+------------------------------------------------------------
+Exit from loop immediately.
+
+Example:
+for(i,0,10){
+    if(i==5){
+        break
+    }
+    on(i)
+}
+
+------------------------------------------------------------
+
+continue
+------------------------------------------------------------
+Skip to next iteration of loop.
+
+Example:
+for(i,0,10){
+    if(i==5){
+        continue
+    }
+    on(i)
+}
+
 ============================================================
 """
     },
@@ -2874,6 +3580,19 @@ Set element at index.
 
 Example:
 nums.pointer(0,99)
+
+------------------------------------------------------------
+
+array.len
+------------------------------------------------------------
+Get array length.
+
+Example:
+inli(arr,[1,2,3,4,5])
+int(size,arr.len)
+on(size)
+
+Result: 5
 
 ============================================================
 """
@@ -2952,6 +3671,27 @@ Example:
 int(x,M.round(3.5))
 
 Result: 4
+
+------------------------------------------------------------
+
+M.randint(min,max)
+------------------------------------------------------------
+Generate random integer between min and max.
+
+Example:
+int(dice,M.randint(1,6))
+
+Result: 1~6
+
+------------------------------------------------------------
+
+M.choice(array)
+------------------------------------------------------------
+Select random element from array.
+
+Example:
+inli(colors,["red","blue","green"])
+int(pick,M.choice(colors))
 
 ============================================================
 """
@@ -3103,10 +3843,43 @@ Shutdown system.
 
 ============================================================
 """
+    },
+    "11": {
+        "title": "CREDIT",
+        "content": """
+
+============================================================
+MAIN PROGRAMMERS / AI ASSISTANCE
+============================================================
+
+GitHub Copilot
+
+OpenAI ChatGPT
+- GPT-4o
+- GPT-4.1
+- GPT-5.3-mini
+
+============================================================
+INSTRUCTOR
+============================================================
+
+neon_0039 (@Sakuran@misskey.day)
+
+============================================================
+TESTERS
+============================================================
+
+My Friends
+
+============================================================
+SPECIAL THANKS
+============================================================
+
+Thank you for all support and inspiration.
+============================================================
+"""
     }
-
 }
-
 def script_help():
 
     while True:
@@ -3201,15 +3974,10 @@ def cmd_help(command):
 
     script_help()
 
-class FunctionReturn(Exception):
-    def __init__(self, value):
-        self.value = value
-        super().__init__()
-
-def cmd_func_return(command):
+def cmd_exec_file(command):
 
     match = re.fullmatch(
-        r'>>\s*(.+)',
+        r'exec\((.+?)\)',
         command
     )
 
@@ -3217,18 +3985,183 @@ def cmd_func_return(command):
 
         print(
             script_error(
-                "INVALID_RETURN_SYNTAX",
-                "Invalid >> syntax.",
-                "S12C"
+                "INVALID_EXEC_SYNTAX",
+                "Invalid exec() syntax.",
+                "F13"
             )
         )
         return
 
-    raw = match.group(1).strip()
+    filename = match.group(1).strip()
 
-    value = parse_value(raw)
+    if (
+        filename.startswith('"')
+        and filename.endswith('"')
+    ):
 
-    raise FunctionReturn(value)
+        filename = filename[1:-1]
+
+    filename = filename.strip()
+
+    if not filename.endswith(".nas"):
+
+        filename += ".nas"
+
+    if not os.path.exists(filename):
+
+        print(
+            script_error(
+                "SCRIPT_FILE_NOT_FOUND",
+                f"'{filename}' does not exist.",
+                "F14"
+            )
+        )
+        return
+
+    try:
+
+        with open(
+            filename,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            script_content = file.read()
+
+    except Exception as e:
+
+        print(
+            script_error(
+                "SCRIPT_FILE_READ_ERROR",
+                str(e),
+                "F15"
+            )
+        )
+        return
+
+    try:
+
+        execute_script(script_content)
+
+    except Exception as e:
+
+        print(
+            script_error(
+                "SCRIPT_EXEC_ERROR",
+                str(e),
+                "F16"
+            )
+        )
+
+def script_editor():
+
+    print()
+
+    print(
+        f"{C.BRIGHT_MAGENTA}"
+        "╔════════════════════════════════════════════════╗"
+    )
+
+    print(
+        f"{C.BRIGHT_MAGENTA}"
+        "║          NANOACTSCRIPT EDITOR                ║"
+        f"{C.RESET}"
+    )
+
+    print(
+        f"{C.BRIGHT_MAGENTA}"
+        "╚════════════════════════════════════════════════╝"
+        f"{C.RESET}"
+    )
+
+    print(
+        f"{C.BRIGHT_BLACK}"
+        "  Type lines of script code"
+        f"{C.RESET}"
+    )
+
+    print(
+        f"{C.BRIGHT_BLACK}"
+        "  Type 'END' on new line to finish"
+        f"{C.RESET}"
+    )
+
+    print()
+
+    lines = []
+
+    try:
+
+        while True:
+
+            line = input(
+                f"{C.BRIGHT_YELLOW}{len(lines)+1:3d} > {C.RESET}"
+            )
+
+            if line == "END":
+                break
+
+            lines.append(line)
+
+    except KeyboardInterrupt:
+
+        print()
+
+        slow_print(
+            "[ EDITOR INTERRUPTED ]",
+            0.005,
+            C.BRIGHT_RED
+        )
+
+        return
+
+    script_content = "\n".join(lines)
+
+    print()
+
+    print(
+        f"{C.BRIGHT_GREEN}"
+        f"[ {len(lines)} LINES ENTERED ]"
+        f"{C.RESET}"
+    )
+
+    print()
+
+    try:
+
+        filename = input(
+            f"{C.BRIGHT_CYAN}Filename (.nas): {C.RESET}"
+        )
+
+        if not filename.endswith(".nas"):
+
+            filename += ".nas"
+
+        with open(
+            filename,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            file.write(script_content)
+
+        print()
+
+        print(
+            f"{C.BRIGHT_GREEN}"
+            f"[ SAVED ] {filename}"
+            f"{C.RESET}"
+        )
+
+    except Exception as e:
+
+        print(
+            script_error(
+                "SAVE_ERROR",
+                str(e),
+                "F17"
+            )
+        )
 
 def execute_command(command):
 
@@ -3237,9 +4170,34 @@ def execute_command(command):
     if command == "":
         return
 
+    if command == "break":
+
+        cmd_break(command)
+        return
+
+    if command == "continue":
+
+        cmd_continue(command)
+        return
+
     if command.startswith(">>"):
 
         cmd_func_return(command)
+        return
+
+    if command.startswith("for of"):
+
+        cmd_for_of(command)
+        return
+
+    if command.startswith("for("):
+
+        cmd_for(command)
+        return
+
+    if command.startswith("swi("):
+
+        cmd_swi(command)
         return
 
     if command.startswith("inli("):
@@ -3265,6 +4223,16 @@ def execute_command(command):
     if command.startswith("in dis"):
 
         cmd_in_dis(command)
+        return
+
+    if command.startswith("multidis("):
+
+        cmd_multidis(command)
+        return
+
+    if command.startswith("in multidis"):
+
+        cmd_in_multidis(command)
         return
 
     if command.startswith("func "):
@@ -3388,6 +4356,11 @@ def execute_command(command):
     if command.startswith("load("):
 
         cmd_load(command)
+        return
+
+    if command.startswith("exec("):
+
+        cmd_exec_file(command)
         return
 
     if command == "reset()":
@@ -3646,6 +4619,7 @@ def script_console():
                 )
 
                 break
+
 def script_menu():
 
     while True:
@@ -3672,23 +4646,27 @@ def script_menu():
         print()
 
         print(
-            f"{C.BRIGHT_GREEN}  [1]{C.WHITE} Run Script"
+            f"{C.BRIGHT_GREEN}  [1]{C.WHITE} Run Script (Console)"
         )
 
         print(
-            f"{C.BRIGHT_CYAN}  [2]{C.WHITE} Help"
+            f"{C.BRIGHT_GREEN}  [2]{C.WHITE} Script Editor"
         )
 
         print(
-            f"{C.BRIGHT_YELLOW}  [3]{C.WHITE} Clear Memory"
+            f"{C.BRIGHT_CYAN}  [3]{C.WHITE} Help"
         )
 
         print(
-            f"{C.BRIGHT_BLUE}  [4]{C.WHITE} Debug Memory"
+            f"{C.BRIGHT_YELLOW}  [4]{C.WHITE} Clear Memory"
         )
 
         print(
-            f"{C.BRIGHT_RED}  [5]{C.WHITE} Exit NANOACTSCRIPT"
+            f"{C.BRIGHT_BLUE}  [5]{C.WHITE} Debug Memory"
+        )
+
+        print(
+            f"{C.BRIGHT_RED}  [6]{C.WHITE} Exit NANOACTSCRIPT"
         )
 
         print()
@@ -3733,9 +4711,14 @@ def script_menu():
         elif choice == "2":
 
             clear_screen()
-            script_help()
+            script_editor()
 
         elif choice == "3":
+
+            clear_screen()
+            script_help()
+
+        elif choice == "4":
 
             SCRIPT_VARIABLES.clear()
             SCRIPT_DISPLAYS.clear()
@@ -3751,7 +4734,7 @@ def script_menu():
                 C.BRIGHT_YELLOW
             )
 
-        elif choice == "4":
+        elif choice == "5":
 
             clear_screen()
 
@@ -3830,7 +4813,7 @@ def script_menu():
 
             clear_screen()
 
-        elif choice == "5":
+        elif choice == "6":
 
             print()
 
