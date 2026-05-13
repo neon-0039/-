@@ -2329,6 +2329,43 @@ def touch_session():
                 )
             )
 
+def cmd_run_file(command):
+    match = re.fullmatch(r'run_file\s*\(\s*["\']?(.+?)["\']?\s*\)', command)
+    if not match:
+        print(script_error("SYNTAX_ERROR", "Invalid run_file syntax. Use: run_file(\"filename\")", "P01"))
+        return
+
+    raw_filename = match.group(1).strip()
+    
+    safe_filename = os.path.basename(raw_filename)
+    
+    if not safe_filename.lower().endswith(".nas"):
+        safe_filename += ".nas"
+
+    file_path = os.path.join(os.getcwd(), safe_filename)
+
+    if not os.path.exists(file_path):
+        print(script_error("FILE_NOT_FOUND", f"The script file '{safe_filename}' was not found.", "F08"))
+        return
+
+    if not os.path.isfile(file_path):
+        print(script_error("IO_ERROR", f"'{safe_filename}' is not a valid file.", "F09"))
+        return
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            script_content = f.read()
+            print(f"{C.BRIGHT_CYAN}[ EXECUTING: {safe_filename} ]{C.RESET}")
+            execute_script(script_content)
+            
+            print(f"{C.BRIGHT_CYAN}[ EXECUTION COMPLETED ]{C.RESET}")
+
+    except UnicodeDecodeError:
+        print(script_error("ENCODING_ERROR", "Failed to decode the file. Please use UTF-8 encoding.", "F10"))
+    except Exception as e:
+        print(script_error("FILE_READ_ERROR", f"An unexpected error occurred: {str(e)}", "F11"))
+
+
 ACTIVE_INTERVALS = {}
 INTERVAL_COUNTER = 0
 
@@ -4357,7 +4394,12 @@ def execute_command(command):
 
         cmd_load(command)
         return
+        
+    if command.startswith("run_file("):
 
+        cmd_run_file(command)
+        return
+        
     if command.startswith("exec("):
 
         cmd_exec_file(command)
