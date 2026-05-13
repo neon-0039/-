@@ -1,0 +1,15 @@
+name: JS Cron
+concurrency:
+  group: bot-group
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run bot
+        run: |
+          node on.js
