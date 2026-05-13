@@ -4612,23 +4612,27 @@ def script_menu():
         print()
 
         print(
-            f"{C.BRIGHT_GREEN}  [1]{C.WHITE} Run Script"
+            f"{C.BRIGHT_GREEN}  [1]{C.WHITE} Run Script (Console)"
         )
 
         print(
-            f"{C.BRIGHT_CYAN}  [2]{C.WHITE} Help"
+            f"{C.BRIGHT_GREEN}  [2]{C.WHITE} Script Editor"
         )
 
         print(
-            f"{C.BRIGHT_YELLOW}  [3]{C.WHITE} Clear Memory"
+            f"{C.BRIGHT_CYAN}  [3]{C.WHITE} Help"
         )
 
         print(
-            f"{C.BRIGHT_BLUE}  [4]{C.WHITE} Debug Memory"
+            f"{C.BRIGHT_YELLOW}  [4]{C.WHITE} Clear Memory"
         )
 
         print(
-            f"{C.BRIGHT_RED}  [5]{C.WHITE} Exit NANOACTSCRIPT"
+            f"{C.BRIGHT_BLUE}  [5]{C.WHITE} Debug Memory"
+        )
+
+        print(
+            f"{C.BRIGHT_RED}  [6]{C.WHITE} Exit NANOACTSCRIPT"
         )
 
         print()
@@ -4673,9 +4677,14 @@ def script_menu():
         elif choice == "2":
 
             clear_screen()
-            script_help()
+            script_editor()
 
         elif choice == "3":
+
+            clear_screen()
+            script_help()
+
+        elif choice == "4":
 
             SCRIPT_VARIABLES.clear()
             SCRIPT_DISPLAYS.clear()
@@ -4691,7 +4700,7 @@ def script_menu():
                 C.BRIGHT_YELLOW
             )
 
-        elif choice == "4":
+        elif choice == "5":
 
             clear_screen()
 
@@ -4770,7 +4779,7 @@ def script_menu():
 
             clear_screen()
 
-        elif choice == "5":
+        elif choice == "6":
 
             print()
 
