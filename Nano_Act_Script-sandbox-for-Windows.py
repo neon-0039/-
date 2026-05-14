@@ -4344,6 +4344,247 @@ def cmd_exec_file(command):
                 "F16"
             )
         )
+def execute_command(command):
+
+    command = str(command).strip()
+
+    if command == "":
+        return
+
+    if command == "break":
+
+        cmd_break(command)
+        return
+
+    if command == "continue":
+
+        cmd_continue(command)
+        return
+
+    if command.startswith(">>"):
+
+        cmd_func_return(command)
+        return
+
+    if command.startswith("for of"):
+
+        cmd_for_of(command)
+        return
+
+    if command.startswith("for("):
+
+        cmd_for(command)
+        return
+
+    if command.startswith("swi("):
+
+        cmd_swi(command)
+        return
+
+    if command.startswith("inli("):
+
+        cmd_inli(command)
+        return
+
+    if command.startswith("int("):
+
+        cmd_int(command)
+        return
+
+    if command.startswith("on("):
+
+        cmd_on(command)
+        return
+
+    if command.startswith("display("):
+
+        cmd_display(command)
+        return
+
+    if command.startswith("in dis"):
+
+        cmd_in_dis(command)
+        return
+
+    if command.startswith("multidis("):
+
+        cmd_multidis(command)
+        return
+
+    if command.startswith("in multidis"):
+
+        cmd_in_multidis(command)
+        return
+
+    if command.startswith("func "):
+
+        cmd_func(command)
+        return
+
+    if re.fullmatch(
+        r'[A-Za-z_][A-Za-z0-9_]*\.run\((.*?)\)',
+        command
+    ):
+
+        cmd_func_run(command)
+        return
+
+    if command.startswith("if("):
+
+        cmd_if(command)
+        return
+
+    if command.startswith("ifel("):
+
+        cmd_ifel(command)
+        return
+
+    if command.startswith("else{"):
+
+        cmd_else(command)
+        return
+
+    if command.startswith("while("):
+
+        cmd_while(command)
+        return
+
+    if command.startswith("touch."):
+
+        cmd_touch_bind(command)
+        return
+
+    if command.startswith("settime("):
+
+        cmd_settime(command)
+        return
+
+    if command.startswith("setInter("):
+
+        cmd_setinter(command)
+        return
+
+    if command.startswith("clearInter("):
+
+        cmd_clearinter(command)
+        return
+
+    if command == "touch()":
+
+        touch_session()
+        return
+
+    if command.startswith("gage("):
+
+        cmd_gage(command)
+        return
+
+    if ".gagecn(" in command:
+
+        cmd_gagecn(command)
+        return
+
+    if ".gagepin(" in command:
+
+        cmd_gagepin(command)
+        return
+
+    if ".on(" in command:
+        if cmd_array_on(command):
+            return
+
+    if ".unon(" in command:
+        if cmd_array_unon(command):
+            return
+
+    if ".off()" in command:
+        if cmd_array_off(command):
+            return
+
+    if ".unoff()" in command:
+        if cmd_array_unoff(command):
+            return
+
+    if ".pointer(" in command:
+        if cmd_array_pointer(command):
+            return
+
+    if command.startswith("input("):
+
+        cmd_input(command)
+        return
+
+    if command == "clear()":
+
+        cmd_clear(command)
+        return
+
+    if command.startswith("wait("):
+
+        cmd_wait(command)
+        return
+
+    if command == "exit()":
+
+        cmd_exit(command)
+        return
+
+    if command.startswith("save("):
+
+        cmd_save(command)
+        return
+
+    if command.startswith("load("):
+
+        cmd_load(command)
+        return
+        
+    if command.startswith("run_file("):
+
+        cmd_run_file(command)
+        return
+        
+    if command.startswith("exec("):
+
+        cmd_exec_file(command)
+        return
+
+    if command == "reset()":
+
+        cmd_reset(command)
+        return
+
+    if command.startswith("del("):
+
+        cmd_del(command)
+        return
+
+    if command == "memory()":
+
+        cmd_memory(command)
+        return
+
+    if command == "help()":
+
+        cmd_help(command)
+        return
+        
+    if command.startswith("temp("):
+
+        cmd_temp(command)
+        return
+
+    if command.startswith("sound("):
+
+        cmd_sound(command)
+        return
+    print(
+        script_error(
+            "UNKNOWN_COMMAND",
+            f"Unknown command '{command}'",
+            "S16"
+        )
+    )
 
 def script_editor():
 
