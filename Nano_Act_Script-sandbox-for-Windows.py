@@ -4222,6 +4222,7 @@ def script_help():
 
         if choice == "0":
 
+            clear_screen()
             break
 
         if choice in HELP_CATEGORIES:
@@ -4344,6 +4345,7 @@ def cmd_exec_file(command):
                 "F16"
             )
         )
+
 def execute_command(command):
 
     command = str(command).strip()
@@ -4538,12 +4540,7 @@ def execute_command(command):
 
         cmd_load(command)
         return
-        
-    if command.startswith("run_file("):
 
-        cmd_run_file(command)
-        return
-        
     if command.startswith("exec("):
 
         cmd_exec_file(command)
@@ -4568,7 +4565,7 @@ def execute_command(command):
 
         cmd_help(command)
         return
-        
+
     if command.startswith("temp("):
 
         cmd_temp(command)
@@ -4578,6 +4575,7 @@ def execute_command(command):
 
         cmd_sound(command)
         return
+
     print(
         script_error(
             "UNKNOWN_COMMAND",
@@ -4585,7 +4583,7 @@ def execute_command(command):
             "S16"
         )
     )
-    
+
 def execute_script(script):
 
     script = str(script).strip()
@@ -4611,7 +4609,7 @@ def execute_script(script):
             global FUNC_RETURN_VALUE
             FUNC_RETURN_VALUE = e.value
             raise
-            
+
 def script_editor():
 
     print()
@@ -4722,20 +4720,23 @@ def script_editor():
             )
         )
 
-    # Windows / CMD 安定版コンソール（EOF非依存・シンプル操作版）
+def script_console():
 
     while True:
 
         print()
+
         print(
             f"{C.BRIGHT_MAGENTA}"
             "╔════════════════════════════════════════════════╗"
         )
+
         print(
             f"{C.BRIGHT_MAGENTA}"
-            "║          NANOACTSCRIPT CONSOLE                ║"
+            "║          NANOACTSCRIPT CONSOLE               ║"
             f"{C.RESET}"
         )
+
         print(
             f"{C.BRIGHT_MAGENTA}"
             "╚════════════════════════════════════════════════╝"
@@ -4776,15 +4777,15 @@ def script_editor():
                 raw_line = input(f"{C.BRIGHT_YELLOW}>>> {C.RESET}")
                 line = raw_line.strip()
 
-                # EXIT → ホームへ戻る
                 if line.lower() == "exit":
                     print()
                     slow_print("[ RETURNING TO HOME ]", 0.005, C.BRIGHT_RED)
+                    clear_screen()
                     return
-                # END → スクリプト実行（Enterは不要、ENDと入力するだけ）
+
                 if line.lower() == "end":
                     script = "\n".join(lines).strip()
-                    
+
                     if script:
                         print()
                         slow_print("[ EXECUTING SCRIPT ]", 0.003, C.BRIGHT_MAGENTA)
@@ -4804,19 +4805,17 @@ def script_editor():
                             )
                     else:
                         slow_print("[ EMPTY SCRIPT ]", 0.005, C.BRIGHT_BLACK)
-                        
+
                     lines = []
                     print(f"\n{C.BRIGHT_BLACK}  Ready for next script{C.RESET}\n")
                     continue
 
-                # BACK → 最後の1行削除
                 if line.lower() == "back":
                     if lines:
                         removed = lines.pop()
                         print(f"{C.BRIGHT_BLACK}[ REMOVED ] {removed}{C.RESET}")
                     continue
 
-                # HIST → 現在入力中の内容表示
                 if line.lower() == "hist":
                     print()
                     print(f"{C.BRIGHT_CYAN}[ CURRENT BUFFER ]{C.RESET}")
@@ -4828,7 +4827,6 @@ def script_editor():
                     print()
                     continue
 
-                # 空行無視
                 if not line:
                     continue
 
@@ -4839,9 +4837,9 @@ def script_editor():
                 )
 
             except EOFError:
-                # Windows: Ctrl+Z + Enter
                 print()
                 slow_print("[ EOF RECEIVED -> RETURNING TO HOME ]", 0.005, C.BRIGHT_RED)
+                clear_screen()
                 return
 
             except KeyboardInterrupt:
@@ -4852,6 +4850,7 @@ def script_editor():
                 else:
                     print()
                     slow_print("[ RETURNING TO HOME ]", 0.005, C.BRIGHT_RED)
+                    clear_screen()
                     return
 
 def script_menu():
