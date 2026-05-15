@@ -4585,7 +4585,33 @@ def execute_command(command):
             "S16"
         )
     )
+    
+def execute_script(script):
 
+    script = str(script).strip()
+
+    if script == "":
+        return
+
+    commands = split_cipher_commands(script)
+
+    for command in commands:
+
+        command = str(command).strip()
+
+        if command == "":
+            continue
+
+        try:
+
+            execute_command(command)
+
+        except FunctionReturn as e:
+
+            global FUNC_RETURN_VALUE
+            FUNC_RETURN_VALUE = e.value
+            raise
+            
 def script_editor():
 
     print()
