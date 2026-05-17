@@ -422,7 +422,70 @@ def parse_value(value):
                 return len(var)
 
         return 0
-        
+
+    upp_match = re.fullmatch(
+        r'(.+?)\.upp\(\)',
+        value
+    )
+    if upp_match:
+        result = cmd_string_upp(value)
+        if result is not False:
+            return result
+
+    lowe_match = re.fullmatch(
+        r'(.+?)\.lowe\(\)',
+        value
+    )
+    if lowe_match:
+        result = cmd_string_lowe(value)
+        if result is not False:
+            return result
+
+    cap_match = re.fullmatch(
+        r'(.+?)\.cap\(\)',
+        value
+    )
+    if cap_match:
+        result = cmd_string_cap(value)
+        if result is not False:
+            return result
+
+    rev_match = re.fullmatch(
+        r'(.+?)\.rev\(\)',
+        value
+    )
+    if rev_match:
+        result = cmd_string_rev(value)
+        if result is not False:
+            return result
+
+    subst_match = re.fullmatch(
+        r'(.+?)\.subst\((.+?),(.+?)\)',
+        value
+    )
+    if subst_match:
+        result = cmd_string_subst(value)
+        if result is not False:
+            return result
+
+    cnta_match = re.fullmatch(
+        r'(.+?)\.cnta\((.+?)\)',
+        value
+    )
+    if cnta_match:
+        result = cmd_string_cnta(value)
+        if result is not False:
+            return result
+
+    rep_match = re.fullmatch(
+        r'(.+?)\.rep\((.+?),(.+?)\)',
+        value
+    )
+    if rep_match:
+        result = cmd_string_rep(value)
+        if result is not False:
+            return result
+    
     if value in SCRIPT_CONSTANTS:
         return SCRIPT_CONSTANTS[value]
 
@@ -1617,6 +1680,343 @@ class LoopContinue(Exception):
     pass
 
 LAST_IF_RESULT = False
+
+# =========================================================
+# STRING OPERATIONS
+# =========================================================
+
+def cmd_string_upp(command):
+    """
+    文字列を大文字に変換
+    使用例: int(result, text.upp())
+    """
+    match = re.fullmatch(
+        r'(.+?)\.upp\(\)',
+        command
+    )
+
+    if not match:
+        return False
+
+    var_name = match.group(1).strip()
+
+    if var_name not in SCRIPT_VARIABLES:
+        print(
+            script_error(
+                "UNKNOWN_VARIABLE",
+                f"Variable '{var_name}' does not exist.",
+                "STR01"
+            )
+        )
+        return True
+
+    value = SCRIPT_VARIABLES[var_name]
+
+    if not isinstance(value, str):
+        print(
+            script_error(
+                "NOT_STRING",
+                f"'{var_name}' is not a string.",
+                "STR02"
+            )
+        )
+        return True
+
+    return value.upper()
+
+
+def cmd_string_lowe(command):
+    """
+    文字列を小文字に変換
+    使用例: int(result, text.lowe())
+    """
+    match = re.fullmatch(
+        r'(.+?)\.lowe\(\)',
+        command
+    )
+
+    if not match:
+        return False
+
+    var_name = match.group(1).strip()
+
+    if var_name not in SCRIPT_VARIABLES:
+        print(
+            script_error(
+                "UNKNOWN_VARIABLE",
+                f"Variable '{var_name}' does not exist.",
+                "STR03"
+            )
+        )
+        return True
+
+    value = SCRIPT_VARIABLES[var_name]
+
+    if not isinstance(value, str):
+        print(
+            script_error(
+                "NOT_STRING",
+                f"'{var_name}' is not a string.",
+                "STR04"
+            )
+        )
+        return True
+
+    return value.lower()
+
+
+def cmd_string_cap(command):
+    """
+    文字列の最初の文字を大文字に
+    使用例: int(result, text.cap())
+    """
+    match = re.fullmatch(
+        r'(.+?)\.cap\(\)',
+        command
+    )
+
+    if not match:
+        return False
+
+    var_name = match.group(1).strip()
+
+    if var_name not in SCRIPT_VARIABLES:
+        print(
+            script_error(
+                "UNKNOWN_VARIABLE",
+                f"Variable '{var_name}' does not exist.",
+                "STR05"
+            )
+        )
+        return True
+
+    value = SCRIPT_VARIABLES[var_name]
+
+    if not isinstance(value, str):
+        print(
+            script_error(
+                "NOT_STRING",
+                f"'{var_name}' is not a string.",
+                "STR06"
+            )
+        )
+        return True
+
+    if len(value) == 0:
+        return ""
+
+    return value[0].upper() + value[1:]
+
+
+def cmd_string_rev(command):
+    """
+    文字列を反転
+    使用例: int(result, text.rev())
+    """
+    match = re.fullmatch(
+        r'(.+?)\.rev\(\)',
+        command
+    )
+
+    if not match:
+        return False
+
+    var_name = match.group(1).strip()
+
+    if var_name not in SCRIPT_VARIABLES:
+        print(
+            script_error(
+                "UNKNOWN_VARIABLE",
+                f"Variable '{var_name}' does not exist.",
+                "STR07"
+            )
+        )
+        return True
+
+    value = SCRIPT_VARIABLES[var_name]
+
+    if not isinstance(value, str):
+        print(
+            script_error(
+                "NOT_STRING",
+                f"'{var_name}' is not a string.",
+                "STR08"
+            )
+        )
+        return True
+
+    return value[::-1]
+
+
+def cmd_string_subst(command):
+    """
+    文字列の部分抽出
+    使用例: int(result, text.subst(0, 5))
+    """
+    match = re.fullmatch(
+        r'(.+?)\.subst\((.+?),(.+?)\)',
+        command
+    )
+
+    if not match:
+        return False
+
+    var_name = match.group(1).strip()
+    start_val = parse_value(match.group(2).strip())
+    end_val = parse_value(match.group(3).strip())
+
+    if var_name not in SCRIPT_VARIABLES:
+        print(
+            script_error(
+                "UNKNOWN_VARIABLE",
+                f"Variable '{var_name}' does not exist.",
+                "STR09"
+            )
+        )
+        return True
+
+    value = SCRIPT_VARIABLES[var_name]
+
+    if not isinstance(value, str):
+        print(
+            script_error(
+                "NOT_STRING",
+                f"'{var_name}' is not a string.",
+                "STR10"
+            )
+        )
+        return True
+
+    try:
+        start_val = int(start_val)
+        end_val = int(end_val)
+    except:
+        print(
+            script_error(
+                "SUBST_INDEX_ERROR",
+                "Substring indices must be numeric.",
+                "STR11"
+            )
+        )
+        return True
+
+    return value[start_val:end_val]
+
+
+def cmd_string_cnta(command):
+    """
+    文字列が別の文字列を含むかチェック (1=含む, 0=含まない)
+    使用例: int(result, text.cnta("hello"))
+    """
+    match = re.fullmatch(
+        r'(.+?)\.cnta\((.+?)\)',
+        command
+    )
+
+    if not match:
+        return False
+
+    var_name = match.group(1).strip()
+    search_val = match.group(2).strip()
+
+    if var_name not in SCRIPT_VARIABLES:
+        print(
+            script_error(
+                "UNKNOWN_VARIABLE",
+                f"Variable '{var_name}' does not exist.",
+                "STR12"
+            )
+        )
+        return True
+
+    value = SCRIPT_VARIABLES[var_name]
+
+    if not isinstance(value, str):
+        print(
+            script_error(
+                "NOT_STRING",
+                f"'{var_name}' is not a string.",
+                "STR13"
+            )
+        )
+        return True
+
+    # 検索文字列をパース
+    if (
+        search_val.startswith('"') and
+        search_val.endswith('"')
+    ):
+        search_str = search_val[1:-1]
+    else:
+        search_str = parse_value(search_val)
+        search_str = str(search_str)
+
+    if search_str in value:
+        return 1
+    else:
+        return 0
+
+
+def cmd_string_rep(command):
+    """
+    文字列内のテキストを置換
+    使用例: int(result, text.rep("old", "new"))
+    """
+    match = re.fullmatch(
+        r'(.+?)\.rep\((.+?),(.+?)\)',
+        command
+    )
+
+    if not match:
+        return False
+
+    var_name = match.group(1).strip()
+    old_val = match.group(2).strip()
+    new_val = match.group(3).strip()
+
+    if var_name not in SCRIPT_VARIABLES:
+        print(
+            script_error(
+                "UNKNOWN_VARIABLE",
+                f"Variable '{var_name}' does not exist.",
+                "STR14"
+            )
+        )
+        return True
+
+    value = SCRIPT_VARIABLES[var_name]
+
+    if not isinstance(value, str):
+        print(
+            script_error(
+                "NOT_STRING",
+                f"'{var_name}' is not a string.",
+                "STR15"
+            )
+        )
+        return True
+
+    # old部分をパース
+    if (
+        old_val.startswith('"') and
+        old_val.endswith('"')
+    ):
+        old_str = old_val[1:-1]
+    else:
+        old_str = parse_value(old_val)
+        old_str = str(old_str)
+
+    # new部分をパース
+    if (
+        new_val.startswith('"') and
+        new_val.endswith('"')
+    ):
+        new_str = new_val[1:-1]
+    else:
+        new_str = parse_value(new_val)
+        new_str = str(new_str)
+
+    return value.replace(old_str, new_str)
 
 def cmd_if(command):
 
@@ -4372,7 +4772,9 @@ sound(note,duration)
 ------------------------------------------------------------
 Play a note with specified duration.
 
-Note format: C4, D#5, etc. (C0-B8)
+Note format: C4, D#5, etc. (C-2~B10, includes quarter tones)
+
+Quarter tones: C♯/4 (between C4 and C#4), etc.
 
 Duration can be:
 - Milliseconds: "500ms"
@@ -4383,12 +4785,158 @@ Example:
 temp(120)
 sound(C4,500ms)
 sound(D4,0.25)
-sound(E4,0.125)
+sound(C♯/4,0.125)
 
 ============================================================
 """
     },
+
     "13": {
+        "title": "COMMENT & CONSTANT",
+        "content": """
+============================================================
+COMMENT & CONSTANT
+============================================================
+
+< comment content >
+------------------------------------------------------------
+Add comments to your script.
+
+Comments are enclosed with < and >.
+Can span multiple lines.
+
+Example:
+< This is a comment >
+< Multi-line
+  comment >
+
+------------------------------------------------------------
+
+const(name,value)
+------------------------------------------------------------
+Define a constant (read-only value).
+
+Constants cannot be reassigned.
+
+Example:
+const(PI, 3.14159)
+const(MAX_LEVEL, 99)
+const(VERSION, "1.0.0")
+
+Using constants:
+int(circle, PI * 5 * 5)
+on("Max Level: " + MAX_LEVEL)
+
+============================================================
+"""
+    },
+
+    "14": {
+        "title": "STRING OPERATIONS",
+        "content": """
+============================================================
+STRING OPERATIONS
+============================================================
+
+text.upp()
+------------------------------------------------------------
+Convert string to uppercase.
+
+Example:
+int(msg, "hello")
+int(upper, msg.upp())
+on(upper)
+
+Result: HELLO
+
+------------------------------------------------------------
+
+text.lowe()
+------------------------------------------------------------
+Convert string to lowercase.
+
+Example:
+int(msg, "HELLO")
+int(lower, msg.lowe())
+on(lower)
+
+Result: hello
+
+------------------------------------------------------------
+
+text.cap()
+------------------------------------------------------------
+Capitalize (first letter uppercase).
+
+Example:
+int(msg, "hello")
+int(capitalized, msg.cap())
+on(capitalized)
+
+Result: Hello
+
+------------------------------------------------------------
+
+text.rev()
+------------------------------------------------------------
+Reverse string.
+
+Example:
+int(msg, "hello")
+int(reversed, msg.rev())
+on(reversed)
+
+Result: olleh
+
+------------------------------------------------------------
+
+text.subst(start, end)
+------------------------------------------------------------
+Extract substring from start to end index.
+
+Example:
+int(msg, "hello world")
+int(sub, msg.subst(0, 5))
+on(sub)
+
+Result: hello
+
+------------------------------------------------------------
+
+text.cnta("search")
+------------------------------------------------------------
+Check if string contains text.
+Returns 1 if contains, 0 if not.
+
+Example:
+int(msg, "hello world")
+int(has_hello, msg.cnta("hello"))
+int(has_xyz, msg.cnta("xyz"))
+on("Contains hello: " + has_hello)
+on("Contains xyz: " + has_xyz)
+
+Result:
+Contains hello: 1
+Contains xyz: 0
+
+------------------------------------------------------------
+
+text.rep("old", "new")
+------------------------------------------------------------
+Replace text in string.
+
+Example:
+int(msg, "hello world")
+int(replaced, msg.rep("world", "NanoAct"))
+on(replaced)
+
+Result: hello NanoAct
+
+============================================================
+"""
+    },
+
+    "15": {
         "title": "CREDIT",
         "content": """
 
@@ -4491,11 +5039,11 @@ def script_help():
             print()
 
             print(
-                f"{C.BRIGHT_WHITE}"
+                f"{C.BRIGHT_CYAN}"
                 f"{HELP_CATEGORIES[choice]['content']}"
                 f"{C.RESET}"
             )
-
+            
             input(
                 f"{C.BRIGHT_BLACK}"
                 "Press Enter to continue..."
@@ -4776,6 +5324,76 @@ def execute_command(command):
         if cmd_array_pointer(command):
             return
 
+    if ".upp()" in command:
+        print(
+            script_error(
+                "STRING_METHOD_ERROR",
+                "String methods must be used with int() or similar assignments.",
+                "STR_CMD01"
+            )
+        )
+        return
+
+    if ".lowe()" in command:
+        print(
+            script_error(
+                "STRING_METHOD_ERROR",
+                "String methods must be used with int() or similar assignments.",
+                "STR_CMD02"
+            )
+        )
+        return
+
+    if ".cap()" in command:
+        print(
+            script_error(
+                "STRING_METHOD_ERROR",
+                "String methods must be used with int() or similar assignments.",
+                "STR_CMD03"
+            )
+        )
+        return
+
+    if ".rev()" in command:
+        print(
+            script_error(
+                "STRING_METHOD_ERROR",
+                "String methods must be used with int() or similar assignments.",
+                "STR_CMD04"
+            )
+        )
+        return
+
+    if ".subst(" in command:
+        print(
+            script_error(
+                "STRING_METHOD_ERROR",
+                "String methods must be used with int() or similar assignments.",
+                "STR_CMD05"
+            )
+        )
+        return
+
+    if ".cnta(" in command:
+        print(
+            script_error(
+                "STRING_METHOD_ERROR",
+                "String methods must be used with int() or similar assignments.",
+                "STR_CMD06"
+            )
+        )
+        return
+
+    if ".rep(" in command:
+        print(
+            script_error(
+                "STRING_METHOD_ERROR",
+                "String methods must be used with int() or similar assignments.",
+                "STR_CMD07"
+            )
+        )
+        return
+        
     if command.startswith("input("):
 
         cmd_input(command)
