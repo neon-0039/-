@@ -296,18 +296,14 @@ def parse_value(value):
     value = str(value).strip()
 
     if re.fullmatch(r'-?\d+', value):
-
         try:
             return int(value)
-
         except ValueError:
             return 0
 
     if re.fullmatch(r'-?\d+\.\d+', value):
-
         try:
             return float(value)
-
         except ValueError:
             return 0.0
 
@@ -316,7 +312,6 @@ def parse_value(value):
         value.startswith('"') and
         value.endswith('"')
     ):
-
         return value[1:-1]
 
     lower = value.lower()
@@ -328,170 +323,53 @@ def parse_value(value):
         return False
 
     if value == "M.random()":
-
         return random.random()
 
-    floor_match = re.fullmatch(
-        r'M\.floor\((.+)\)',
-        value
-    )
-
+    floor_match = re.fullmatch(r'M\.floor\((.+)\)', value)
     if floor_match:
-
         raw = floor_match.group(1).strip()
-
         parsed = parse_value(raw)
-
         try:
-
-            return math.floor(
-                float(parsed)
-            )
-
+            return math.floor(float(parsed))
         except:
-
             return 0
 
-    round_match = re.fullmatch(
-        r'M\.round\((.+)\)',
-        value
-    )
-
+    round_match = re.fullmatch(r'M\.round\((.+)\)', value)
     if round_match:
-
         raw = round_match.group(1).strip()
-
         parsed = parse_value(raw)
-
         try:
-
-            return round(
-                float(parsed)
-            )
-
+            return round(float(parsed))
         except:
-
             return 0
 
-    randint_match = re.fullmatch(
-        r'M\.randint\((.+),(.+)\)',
-        value
-    )
-
+    randint_match = re.fullmatch(r'M\.randint\((.+),(.+)\)', value)
     if randint_match:
-
         try:
-
             min_val = int(parse_value(randint_match.group(1).strip()))
             max_val = int(parse_value(randint_match.group(2).strip()))
-
             return random.randint(min_val, max_val)
-
         except:
-
             return 0
 
-    choice_match = re.fullmatch(
-        r'M\.choice\((.+)\)',
-        value
-    )
-
+    choice_match = re.fullmatch(r'M\.choice\((.+)\)', value)
     if choice_match:
-
         raw = choice_match.group(1).strip()
-
         if raw in SCRIPT_VARIABLES and isinstance(SCRIPT_VARIABLES[raw], list):
-
             arr = SCRIPT_VARIABLES[raw]
-
             if arr:
-
                 return random.choice(arr)
-
         return None
 
-    len_match = re.fullmatch(
-        r'(.+?)\.len',
-        value
-    )
-
+    len_match = re.fullmatch(r'(.+?)\.len', value)
     if len_match:
-
         var_name = len_match.group(1).strip()
-
         if var_name in SCRIPT_VARIABLES:
-
             var = SCRIPT_VARIABLES[var_name]
-
             if isinstance(var, (list, str)):
-
                 return len(var)
-
         return 0
 
-    upp_match = re.fullmatch(
-        r'(.+?)\.upp\(\)',
-        value
-    )
-    if upp_match:
-        result = cmd_string_upp(value)
-        if result is not False:
-            return result
-
-    lowe_match = re.fullmatch(
-        r'(.+?)\.lowe\(\)',
-        value
-    )
-    if lowe_match:
-        result = cmd_string_lowe(value)
-        if result is not False:
-            return result
-
-    cap_match = re.fullmatch(
-        r'(.+?)\.cap\(\)',
-        value
-    )
-    if cap_match:
-        result = cmd_string_cap(value)
-        if result is not False:
-            return result
-
-    rev_match = re.fullmatch(
-        r'(.+?)\.rev\(\)',
-        value
-    )
-    if rev_match:
-        result = cmd_string_rev(value)
-        if result is not False:
-            return result
-
-    subst_match = re.fullmatch(
-        r'(.+?)\.subst\((.+?),(.+?)\)',
-        value
-    )
-    if subst_match:
-        result = cmd_string_subst(value)
-        if result is not False:
-            return result
-
-    cnta_match = re.fullmatch(
-        r'(.+?)\.cnta\((.+?)\)',
-        value
-    )
-    if cnta_match:
-        result = cmd_string_cnta(value)
-        if result is not False:
-            return result
-
-    rep_match = re.fullmatch(
-        r'(.+?)\.rep\((.+?),(.+?)\)',
-        value
-    )
-    if rep_match:
-        result = cmd_string_rep(value)
-        if result is not False:
-            return result
-    
     if value in SCRIPT_CONSTANTS:
         return SCRIPT_CONSTANTS[value]
 
@@ -499,7 +377,6 @@ def parse_value(value):
         return SCRIPT_VARIABLES[value]
 
     return value
-
 # =========================================================
 # NOTE FREQUENCIES WITH EXTENDED RANGE & QUARTER TONES
 # =========================================================
@@ -5316,7 +5193,6 @@ Result: hello NanoAct
 ============================================================
 """
     },
-
     "15": {
         "title": "VOICE SYSTEM",
         "content": """
@@ -5344,8 +5220,7 @@ voise("voice.wav", "C4", 1.0)
 voise("voice.wav", "D5", "500ms")
 ============================================================
 """
-    },
-    
+    },    
     "16": {
         "title": "CREDIT",
         "content": """
@@ -5916,25 +5791,6 @@ def execute_script(script):
             FUNC_RETURN_VALUE = e.value
             raise
             
-    commands = split_cipher_commands(script)
-
-    for command in commands:
-
-        command = str(command).strip()
-
-        if command == "":
-            continue
-
-        try:
-
-            execute_command(command)
-
-        except FunctionReturn as e:
-
-            global FUNC_RETURN_VALUE
-            FUNC_RETURN_VALUE = e.value
-            raise
-
 def script_editor():
 
     print()
