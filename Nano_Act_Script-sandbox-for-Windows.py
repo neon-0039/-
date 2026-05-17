@@ -13,6 +13,9 @@ import random
 import os
 import json
 import winsound
+import wave
+import struct
+import array
 
 # =========================================================
 # SCRIPT ENGINE MEMORY
@@ -23,6 +26,9 @@ SCRIPT_DISPLAYS = {}
 SCRIPT_FUNCTIONS = {}
 SCRIPT_GAGES = {}
 SCRIPT_CONSTANTS = {}  
+VOICE_SAMPLES = {}  # 読み込んだWAVファイル
+VOICE_SETTINGS = {}  # voicesetの設定
+VOICE_PLAYBACK_QUEUE = []  # 再生キュー
 
 # =========================================================
 # COLOR SYSTEM
@@ -783,7 +789,382 @@ def cmd_sound(command):
                 "SND10"
             )
         )
-        
+
+def cmd_voicein(command):
+    """
+    WAVファイルを読み込む
+    使用例: voicein("voice.wav") または voicein("voices_folder")
+    """
+    match = re.fullmatch(
+        r'voicein\((.+?)\)',
+        command
+    )
+
+    if not match:
+        print(
+            script_error(
+                "INVALID_VOICEIN_SYNTAX",
+                "Invalid voicein() syntax.",
+                "VO01"
+            )
+        )
+        return
+
+    filename = match.group(1).strip()
+
+    if (
+        filename.startswith('"')
+        and filename.endswith('"')
+    ):
+        filename = filename[1:-1]
+
+    filename = filename.strip()
+
+    # フォルダ指定か、ファイル指定か判定
+    if os.path.isdir(filename):
+        # フォルダ内のWAVファイルをすべて読み込む
+        try:
+            wav_files = [
+                f for f in os.listdir(filename)
+                if f.lower().endswith('.wav')
+            ]
+
+            if not wav_files:
+                print(
+                    script_error(
+                        "NO_WAV_FILES",
+                        f"No WAV files found in '{filename}'.",
+                        "VO02"
+                    )
+                )
+                return
+
+            loaded_count = 0
+            for wav_file in wav_files:
+                file_path = os.path.join(filename, wav_file)
+                if load_wav_file(file_path, wav_file):
+                    loaded_count += 1
+
+            print(
+                f"{C.BRIGHT_GREEN}"
+                f"[ LOADED {loaded_count} VOICE FILES ]"
+                f"{C.RESET}"
+            )
+
+        except Exception as e:
+            print(
+                script_error(
+                    "FOLDER_READ_ERROR",
+                    str(e),
+                    "VO03"
+                )
+            )
+
+    elif filename.lower().endswith('.wav'):
+        # 単一ファイル読み込み
+        if load_wav_file(filename, filename):
+            print(
+                f"{C.BRIGHT_GREEN}"
+                f"[ VOICE LOADED ] {filename}"
+                f"{C.RESET}"
+            )
+
+    else:
+        print(
+            script_error(
+                "INVALID_VOICE_FILE",
+                "File must be .wav format.",
+                "VO04"
+            )
+        )
+
+
+def load_wav_file(file_path, file_name):
+    """
+    WAVファイルを読み込んでメモリに格納
+    """
+    if not os.path.exists(file_path):
+        print(
+            script_error(
+                "VOICE_FILE_NOT_FOUND",
+                f"'{file_path}' not found.",
+                "VO05"
+            )
+        )
+        return False
+
+    try:
+        with wave.open(file_path, 'rb') as wav_file:
+            # WAVファイルの情報を取得
+            n_channels = wav_file.getnchannels()
+            sample_width = wav_file.getsampwidth()
+            framerate = wav_file.getframerate()
+            n_frames = wav_file.getnframes()
+
+            # 音声データを読み込む
+            audio_data = wav_file.readframes(n_frames)
+
+            VOICE_SAMPLES[file_name] = {
+                "data": audio_data,
+                "channels": n_channels,
+                "sample_width": sample_width,
+                "framerate": framerate,
+                "frames": n_frames,
+                "duration": n_frames / framerate
+            }
+
+            return True
+
+    except wave.Error as e:
+        print(
+            script_error(
+                "WAVE_FILE_ERROR",
+                f"Failed to read WAV file: {str(e)}",
+                "VO06"
+            )
+        )
+        return False
+
+    except Exception as e:
+        print(
+            script_error(
+                "VOICE_LOAD_ERROR",
+                str(e),
+                "VO07"
+            )
+        )
+        return False
+
+
+def cmd_voiceset(command):
+    """
+    音声再生の設定
+    使用例: voiceset("voice.wav", 100, 50, 100)
+    - ファイル名
+    - 先行で鳴らす音の長さ(ms)
+    - 前と重ねる音の長さ(ms)
+    - 後ろと重ねる長さ(ms)
+    """
+    match = re.fullmatch(
+        r'voiceset\((.+?),(.+?),(.+?),(.+?)\)',
+        command
+    )
+
+    if not match:
+        print(
+            script_error(
+                "INVALID_VOICESET_SYNTAX",
+                "Invalid voiceset() syntax.",
+                "VO08"
+            )
+        )
+        return
+
+    filename = match.group(1).strip()
+    if filename.startswith('"') and filename.endswith('"'):
+        filename = filename[1:-1]
+
+    try:
+        lead_ms = int(parse_value(match.group(2).strip()))
+        blend_before_ms = int(parse_value(match.group(3).strip()))
+        blend_after_ms = int(parse_value(match.group(4).strip()))
+    except:
+        print(
+            script_error(
+                "VOICESET_VALUE_ERROR",
+                "voiceset values must be numeric.",
+                "VO09"
+            )
+        )
+        return
+
+    if filename not in VOICE_SAMPLES:
+        print(
+            script_error(
+                "VOICE_NOT_LOADED",
+                f"Voice '{filename}' not loaded.",
+                "VO10"
+            )
+        )
+        return
+
+    VOICE_SETTINGS[filename] = {
+        "lead_ms": lead_ms,
+        "blend_before_ms": blend_before_ms,
+        "blend_after_ms": blend_after_ms
+    }
+
+    print(
+        f"{C.BRIGHT_CYAN}"
+        f"[ VOICE SETTINGS ] {filename}"
+        f"{C.RESET}"
+    )
+
+
+def get_fundamental_frequency(filename):
+    """
+    簡易的な基本周波数推定
+    実装の簡略化のため、設定周波数を返す
+    """
+    # 本来はFFTで周波数解析が必要
+    # ここでは仮のデフォルト値を返す
+    sample_info = VOICE_SAMPLES.get(filename)
+
+    if not sample_info:
+        return 100.0  # デフォルト周波数
+
+    # 非常に簡易的な推定：ファイル長から推測
+    duration = sample_info['duration']
+
+    # 短いファイル = 高い周波数、長いファイル = 低い周波数
+    estimated_freq = 200 / (1 + duration)
+
+    return estimated_freq
+
+
+def cmd_voise(command):
+    """
+    音声を再生
+    使用例: voise("voice.wav", "C4", 1.0) または voise("voice.wav", "D5", "500ms")
+    - ファイル名
+    - 音程（C4など）
+    - 長さ（秒またはBPM表記）
+    """
+    match = re.fullmatch(
+        r'voise\((.+?),(.+?),(.+?)\)',
+        command
+    )
+
+    if not match:
+        print(
+            script_error(
+                "INVALID_VOISE_SYNTAX",
+                "Invalid voise() syntax.",
+                "VO11"
+            )
+        )
+        return
+
+    filename = match.group(1).strip()
+    if filename.startswith('"') and filename.endswith('"'):
+        filename = filename[1:-1]
+
+    note_code = match.group(2).strip()
+    if note_code.startswith('"') and note_code.endswith('"'):
+        note_code = note_code[1:-1]
+
+    duration_val = match.group(3).strip()
+
+    if filename not in VOICE_SAMPLES:
+        print(
+            script_error(
+                "VOICE_NOT_LOADED",
+                f"Voice '{filename}' not loaded.",
+                "VO12"
+            )
+        )
+        return
+
+    if note_code not in NOTE_FREQUENCIES:
+        print(
+            script_error(
+                "INVALID_NOTE",
+                f"Note '{note_code}' not found.",
+                "VO13"
+            )
+        )
+        return
+
+    # 長さをパース
+    if duration_val.lower().endswith("ms"):
+        try:
+            duration_ms = int(duration_val[:-2])
+        except:
+            print(
+                script_error(
+                    "INVALID_DURATION",
+                    "Duration must be numeric.",
+                    "VO14"
+                )
+            )
+            return
+    else:
+        try:
+            note_length = float(parse_value(duration_val))
+            whole_note_ms = (60000 / SCRIPT_BPM) * 4
+            duration_ms = int(whole_note_ms * note_length)
+        except:
+            print(
+                script_error(
+                    "INVALID_DURATION",
+                    "Duration must be numeric.",
+                    "VO15"
+                )
+            )
+            return
+
+    target_frequency = NOTE_FREQUENCIES[note_code]
+    source_frequency = get_fundamental_frequency(filename)
+
+    # ピッチシフト比率
+    pitch_ratio = target_frequency / source_frequency
+
+    settings = VOICE_SETTINGS.get(filename, {
+        "lead_ms": 0,
+        "blend_before_ms": 0,
+        "blend_after_ms": 0
+    })
+
+    # 再生キューに追加
+    VOICE_PLAYBACK_QUEUE.append({
+        "filename": filename,
+        "frequency": target_frequency,
+        "source_freq": source_frequency,
+        "pitch_ratio": pitch_ratio,
+        "duration_ms": duration_ms,
+        "settings": settings
+    })
+
+    def play_voice():
+        try:
+            # 先行時間の処理
+            if settings["lead_ms"] > 0:
+                time.sleep(settings["lead_ms"] / 1000)
+
+            # 音声再生（簡略版：元のWAVを再生）
+            sample_info = VOICE_SAMPLES[filename]
+
+            try:
+                winsound.PlaySound(filename, winsound.SND_FILENAME)
+
+            except Exception:
+                # ファイルが再生できない場合、周波数で代替
+                winsound.Beep(
+                    int(target_frequency),
+                    duration_ms
+                )
+
+        except Exception as e:
+            print(
+                script_error(
+                    "VOICE_PLAYBACK_ERROR",
+                    str(e),
+                    "VO16"
+                )
+            )
+
+    thread = threading.Thread(
+        target=play_voice,
+        daemon=True
+    )
+    thread.start()
+
+    print(
+        f"{C.BRIGHT_MAGENTA}"
+        f"[ VOICE PLAYING ] {filename} @ {note_code}"
+        f"{C.RESET}"
+    )
+    
 def safe_eval(expression):
 
     safe_globals = {
@@ -4937,6 +5318,35 @@ Result: hello NanoAct
     },
 
     "15": {
+        "title": "VOICE SYSTEM",
+        "content": """
+============================================================
+VOICE SYSTEM
+============================================================
+Simple experimental function
+============================================================
+
+voicein
+------------------------------------------------------------
+voicein("voice_samples")
+voicein("voice.wav")
+------------------------------------------------------------
+voiceset()
+------------------------------------------------------------
+voiceset("voice.wav", 100, 30, 50)
+
+voiceset("voice.wav", overlap,Pre-duplication,Post-duplication)
+------------------------------------------------------------
+
+voice()
+------------------------------------------------------------
+voise("voice.wav", "C4", 1.0)
+voise("voice.wav", "D5", "500ms")
+============================================================
+"""
+    },
+    
+    "16": {
         "title": "CREDIT",
         "content": """
 
@@ -5165,9 +5575,20 @@ def execute_command(command):
     if command.startswith("const("):
         cmd_const(command)
         return
+        
+    if command.startswith("voicein("):
+        cmd_voicein(command)
+        return
 
+    if command.startswith("voiceset("):
+        cmd_voiceset(command)
+        return
+
+    if command.startswith("voise("):
+        cmd_voise(command)
+        return
+        
     if command == "break":
-
         cmd_break(command)
         return
 
